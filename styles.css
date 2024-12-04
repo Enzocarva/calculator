@@ -50,20 +50,20 @@ body {
     width: 14rem;
 }
 
-.clear-negative-percent {
-    background: #299f1c;
-}
-
-.clear-negative-percent:active {
-    background: #61c756;
-}
-
 .operators {
     background: #fff426;
 }
 
 .operators:active {
     background: #b5ae28;
+}
+
+.clear-negative-percent {
+    background: #299f1c;
+}
+
+.clear-negative-percent:active {
+    background: #61c756;
 }
 
 .numbers {

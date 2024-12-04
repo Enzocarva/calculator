@@ -2,8 +2,23 @@ class Calculator {
     constructor() {
         this.display = document.querySelector(".display");
         this.keys = document.querySelectorAll(".key");
+
+        // Pre-build lookup maps for faster key matching
+        this.numberKeyMap = this.buildKeyMap(".key.numbers");
+        this.operatorKeyMap = this.buildKeyMap(".key.operators");
+        this.specialKeyMap = this.buildSpecialKeyMap();
+        this.operatorMap = {
+            "+": "+",
+            "-": "-",
+            "*": "/",
+            "/": "÷",
+            "Enter": "=",
+            "=": "="
+        };
+
         this.reset();
         this.bindEvents();
+        this.bindKeyboardEvents();
     }
 
     reset() {
@@ -16,7 +31,73 @@ class Calculator {
 
     bindEvents() {
         this.keys.forEach(key => {
-            key.addEventListener("click", (event) => this.handleKeyPress(event.target));
+            key.addEventListener("click", (event) => { this.handleKeyPress(event.target); console.log(event) });
+        });
+    }
+
+    buildKeyMap(selector) {
+        const map = {};
+        document.querySelectorAll(selector).forEach(key => {
+            map[key.textContent.trim()] = key;
+        });
+        return map;
+    }
+
+    buildSpecialKeyMap() {
+        const specialKeysArray = Array.from(document.querySelectorAll(".key.clear-negative-percent"))
+        return {
+            "AC": specialKeysArray.find(element => element.textContent.trim() === "AC"),
+            "%": specialKeysArray.find(element => element.textContent.trim() === "%"),
+            "+/-": specialKeysArray.find(element => element.textContent.trim() === "+/-"),
+        };
+    }
+
+    bindKeyboardEvents() {
+        document.addEventListener("keydown", (event) => {
+            // Only prevent default for calculator-specific keys
+            const calculatorKeys = [
+                ...Object.keys(this.numberKeyMap),
+                ...Object.keys(this.operatorKeyMap),
+                "Backspace", "Escape", "Enter", "%", "+/-"
+            ];
+
+            if (calculatorKeys.includes(event.key) ||
+                calculatorKeys.includes(event.key.toLowerCase()) ||
+                calculatorKeys.includes(event.key.toUpperCase())) {
+                event.preventDefault();
+            }
+
+            console.log(event);
+
+            // Number and decimal keys
+            if (this.numberKeyMap[event.key]) {
+                this.handleKeyPress(this.numberKeyMap[event.key]);
+                return;
+            }
+
+            // Operator keys
+            if (this.operatorMap[event.key] && this.operatorKeyMap[this.operatorMap[event.key]]) {
+                this.handleKeyPress(this.operatorKeyMap[this.operatorMap[event.key]]);
+                return;
+            }
+
+            // Special keys
+            switch (event.key) {
+                case "Backspace":
+                    this.handleBackspace();
+                    break;
+                case "Escape":
+                case "Clear":
+                    if (this.specialKeyMap["AC"]) {
+                        this.handleKeyPress(this.specialKeyMap["AC"]);
+                    }
+                    break;
+                case "%":
+                    if (this.specialKeyMap["%"]) {
+                        this.handleKeyPress(this.specialKeyMap["%"]);
+                    }
+                    break;
+            }
         });
     }
 
@@ -37,6 +118,12 @@ class Calculator {
             case keyClass === "equals":
                 this.calculateResult();
                 break;
+            case keyValue === "+/-":
+            case keyValue === "%":
+                this.handleNegativePercentInput(keyValue);
+                break;
+            default:
+                return alert("Something went wrong with your input.");
         }
     }
 
@@ -45,7 +132,7 @@ class Calculator {
         if (this.shouldResetDisplay || this.display.textContent === "0") {
             this.display.textContent = keyValue === "." ? "0." : keyValue;
             this.shouldResetDisplay = false;
-        } else if (this.display.childNodes[0].length < 10) {
+        } else if (this.display.childNodes[0].length < 9) {
 
             // Prevent multiple decimals
             if (keyValue === "." && this.display.textContent.includes(".")) return;
@@ -64,6 +151,23 @@ class Calculator {
         this.shouldResetDisplay = true;
     }
 
+    handleNegativePercentInput(keyValue) {
+        if (keyValue === "+/-") {
+            this.display.textContent = Number(parseFloat(this.display.textContent) * -1).toPrecision(9);
+        } else {
+            this.display.textContent = Number(parseFloat(this.display.textContent) / 100).toPrecision(9);
+        }
+    }
+
+    handleBackspace() {
+        // Remove the last character, ensure at least one digit remains
+        if (this.display.childNodes[0].length > 1) {
+            this.display.textContent = this.display.textContent.slice(0, -1);
+        } else {
+            this.display.textContent = "0";
+        }
+    }
+
     calculateResult() {
         // Only operate if there are two operands and one operator
         if (this.operator === null) return;
@@ -71,9 +175,9 @@ class Calculator {
         this.operand2 = parseFloat(this.display.textContent);
         const result = this.operate(this.operator, this.operand1, this.operand2);
 
-        // Limit displayed result to 10 significant digits
+        // Limit displayed result to 9 significant digits
         this.display.textContent = result !== "Error"
-            ? Number(result.toPrecision(10))
+            ? Number(result.toPrecision(9))
             : result;
 
         this.operator = null;
@@ -105,107 +209,3 @@ class Calculator {
 
 // Initialize the calculator
 document.addEventListener("DOMContentLoaded", () => new Calculator());
-
-// const keys = document.querySelectorAll(".key");
-// const display = document.querySelector(".display");
-// let operator = null
-// let operand1 = 0;
-// let operand2 = null;
-// let newNumber = false;
-
-// // Arithmatic functions
-// function add(x, y) { return x + y; }
-
-// function subtract(x, y) { return x - y; }
-
-// function multiply(x, y) { return x * y; }
-
-// function divide(x, y) { y === 0 ? "Error" : x / y; }
-
-// // Calculate and return the result of the two operands with the operator
-// function operate(operator, x, y) {
-//     switch (operator) {
-//         case "+":
-//             return add(x, y);
-//         case "-":
-//             return subtract(x, y);
-//         case "*":
-//         case "x":
-//             return multiply(x, y);
-//         case "/":
-//         case "÷":
-//             return divide(x, y);
-//         default:
-//             return null;
-//     }
-// }
-
-// // Show the clicked keys and results in the display
-// function populateDisplay(keyPressed) {
-//     const keyValue = keyPressed.textContent;
-//     const keyClass = keyPressed.classList[1];
-//     let displayLength = display.childNodes[0].length;
-
-//     console.log(`displayValue = ${display.textContent} keyValue = ${keyValue} keyClass = ${keyClass} operator = ${operator} operand1 = ${operand1} operand2 = ${operand2}`);
-
-//     // Clear the screen with AC button
-//     if (keyValue === "AC") {
-//         console.log("case AC");
-//         display.textContent = 0;
-//         operator = null;
-//         operand1 = 0;
-//         operand2 = null
-//     }
-
-//     // Edge case for first number pressed when display is clear
-//     else if (display.textContent === "0" && keyClass === "numbers") {
-//         console.log("case 0 && keyClass numbers");
-//         display.textContent = keyValue;
-//     }
-
-//     // Max amount of numbers on display is 10
-//     else if ((displayLength < 10 || newNumber) && (keyClass === "numbers")) {
-//         console.log("case length < 10 && keyClass numbers");
-//         if (newNumber) {
-//             display.textContent = keyValue;
-//             newNumber = false;
-//         } else {
-//             display.textContent += keyValue;
-//         }
-//     }
-
-//     else if (keyClass === "operators") {
-//         console.log("case operators");
-//         if (operator !== null) {
-//             evaluateEqualsKey();
-//         }
-//         operator = keyValue;
-//         operand1 = parseFloat(display.textContent);
-//         newNumber = true;
-//         console.log(`Inside operators: operator = ${operator} operand1 = ${operand1} operand2 = ${operand2}`);
-//     }
-
-//     else if (keyClass === "equals") {
-//         evaluateEqualsKey();
-//     }
-// }
-
-// // Evaluate the current expression when equals key is pressed
-// function evaluateEqualsKey() {
-//     operand2 = parseFloat(display.textContent);
-//     let result = operate(operator, operand1, operand2);
-//     if (result !== "Error") {
-//         result = Number(result.toPrecision(10));
-//     }
-//     display.textContent = result;
-//     operator = null;
-//     console.log(`operand2 = ${operand2} result = ${result}`);
-// }
-
-// // Add event listeners and functionality to the keys
-// keys.forEach((key) => {
-//     // const keyValue = key.textContent;
-//     key.addEventListener("click", (event) => {
-//         populateDisplay(event.target);
-//     });
-// });
