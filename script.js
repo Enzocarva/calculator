@@ -67,8 +67,6 @@ class Calculator {
                 event.preventDefault();
             }
 
-            console.log(event);
-
             // Number and decimal keys
             if (this.numberKeyMap[event.key]) {
                 this.handleKeyPress(this.numberKeyMap[event.key]);
